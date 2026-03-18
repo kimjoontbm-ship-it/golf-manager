@@ -557,7 +557,7 @@
     </div>
   </div>
 
-  <div class="weather-grid">
+  <div class="weather-grid" style="grid-template-columns:repeat(4,1fr);">
     <div class="weather-item">
       <div class="wi-icon">💨</div>
       <div class="wi-val" id="w-wind">--</div>
@@ -572,6 +572,11 @@
       <div class="wi-icon">☁️</div>
       <div class="wi-val" id="w-cloud">--%</div>
       <div class="wi-lbl">구름</div>
+    </div>
+    <div class="weather-item">
+      <div class="wi-icon">🌧️</div>
+      <div class="wi-val" id="w-precip">--</div>
+      <div class="wi-lbl">강수량 (mm)</div>
     </div>
   </div>
 
@@ -672,11 +677,11 @@
     <div class="form-row">
       <div class="form-group">
         <label class="form-label">총 스코어</label>
-        <input class="form-input" type="number" id="score-total" placeholder="98">
+        <input class="form-input" type="number" id="score-total" placeholder="98" oninput="autoCalcPar(this.value)">
       </div>
       <div class="form-group">
-        <label class="form-label">파 대비</label>
-        <input class="form-input" type="text" id="score-par" placeholder="+26">
+        <label class="form-label">파 대비 <span style="font-weight:400;color:var(--gray-500)">(파72 자동계산)</span></label>
+        <input class="form-input" type="text" id="score-par" placeholder="자동계산" readonly style="background:var(--gray-100);color:var(--gray-500);">
       </div>
     </div>
     <div class="form-row">
@@ -885,7 +890,8 @@ async function loadScores() {
     gir: getProp(r, 'GIR') || 0,
     putt: getProp(r, '퍼팅수') || 0,
     memo: getProp(r, '메모') || ''
-  })).filter(s => s.total);
+  })).filter(s => s.total)
+    .sort((a, b) => b.date.localeCompare(a.date));
 }
 
 async function loadLogs() {
@@ -1020,20 +1026,23 @@ function scoreColor(n) {
 }
 function renderScoreChart(data) {
   const el = document.getElementById('score-chart');
-  const recent = data.slice(0, 6).reverse();
+  const sorted = [...data].sort((a,b) => a.date.localeCompare(b.date));
+  const recent = sorted.slice(-10);
   if (!recent.length) return;
-  const max = Math.max(...recent.map(s => s.total));
-  const min = Math.min(...recent.map(s => s.total));
+  const max = Math.max(...recent.map(s => Number(s.total)));
+  const min = Math.min(...recent.map(s => Number(s.total)));
   const avg = Math.round(recent.reduce((a,s) => a + Number(s.total), 0) / recent.length);
   document.getElementById('avg-score-badge').textContent = '평균 ' + avg;
   const bars = recent.map(s => {
-    const h = Math.max(15, Math.round(((s.total - min + 5) / (max - min + 10)) * 65));
-    return `<div class="mini-bar" style="height:${h}px">
+    const h = Math.max(15, Math.round(((Number(s.total) - min + 5) / (max - min + 10)) * 65));
+    return `<div class="mini-bar" style="height:${h}px;min-width:28px;flex-shrink:0;">
       <div class="bar-val">${s.total}</div>
       <div class="bar-label">${(s.date||'').slice(5)}</div>
     </div>`;
   }).join('');
-  el.innerHTML = `<div class="mini-bar-row">${bars}</div>`;
+  el.innerHTML = `<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;padding-bottom:4px;">
+    <div class="mini-bar-row" style="min-width:${recent.length * 38}px;">${bars}</div>
+  </div>`;
 }
 
 // ══════════════════════════════════════════
@@ -1170,7 +1179,7 @@ const TEDDY_LON = 126.35;
 
 async function loadWeather() {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${TEDDY_LAT}&longitude=${TEDDY_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_sum&wind_speed_unit=ms&timezone=Asia/Seoul&forecast_days=7`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${TEDDY_LAT}&longitude=${TEDDY_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover,precipitation&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_sum&wind_speed_unit=ms&timezone=Asia/Seoul&forecast_days=7`;
     const res = await fetch(url);
     const data = await res.json();
     const c = data.current;
@@ -1182,6 +1191,7 @@ async function loadWeather() {
     document.getElementById('w-wind').textContent = c.wind_speed_10m.toFixed(1);
     document.getElementById('w-humid').textContent = c.relative_humidity_2m + '%';
     document.getElementById('w-cloud').textContent = c.cloud_cover + '%';
+    document.getElementById('w-precip').textContent = (c.precipitation || 0).toFixed(1) + 'mm';
 
     const score = golfScore(c.temperature_2m, c.wind_speed_10m, 0, c.weather_code);
     document.getElementById('gs-icon').textContent = score.icon;
@@ -1252,17 +1262,29 @@ function golfScore(temp, wind, precip, code) {
 // ══════════════════════════════════════════
 //  SUBMIT FORMS
 // ══════════════════════════════════════════
+function autoCalcPar(val) {
+  const total = parseInt(val);
+  const parEl = document.getElementById('score-par');
+  if (!isNaN(total)) {
+    const diff = total - 72;
+    parEl.value = diff >= 0 ? '+' + diff : String(diff);
+  } else { parEl.value = ''; }
+}
+
 async function submitScore() {
+  const total = parseInt(document.getElementById('score-total').value);
+  const diff = isNaN(total) ? '' : (total - 72 >= 0 ? '+' + (total-72) : String(total-72));
   const score = {
     date: document.getElementById('score-date').value,
     course: document.getElementById('score-course').value,
-    total: parseInt(document.getElementById('score-total').value),
-    par: document.getElementById('score-par').value,
-    gir: parseInt(document.getElementById('score-gir').value),
-    putt: parseInt(document.getElementById('score-putt').value),
+    total: total,
+    par: diff,
+    gir: parseInt(document.getElementById('score-gir').value) || 0,
+    putt: parseInt(document.getElementById('score-putt').value) || 0,
     memo: document.getElementById('score-memo').value
   };
   STATE.scores.unshift(score);
+  STATE.scores.sort((a,b) => b.date.localeCompare(a.date));
   closeModal('modal-score');
   renderScoreList();
   renderHomeRecent();
