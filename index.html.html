@@ -1,0 +1,1246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#1a4d2e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="My Golf">
+<meta name="description" content="나의 골프 매니저 - 스코어, 클럽, 날씨">
+<title>⛳ My Golf Manager</title>
+<link rel="manifest" href="#" id="manifest-link">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Noto+Sans+KR:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+<style>
+  :root {
+    --green-900: #0d2818;
+    --green-800: #1a4d2e;
+    --green-700: #1e6137;
+    --green-600: #2d8048;
+    --green-500: #3aa05c;
+    --green-400: #5bbf7a;
+    --green-200: #c5e8d0;
+    --green-100: #e8f7ee;
+    --green-50:  #f4fbf6;
+    --sand:      #f5f0e8;
+    --sand-dark: #e8e0d0;
+    --white:     #ffffff;
+    --gray-700:  #374151;
+    --gray-500:  #6b7280;
+    --gray-300:  #d1d5db;
+    --gray-100:  #f3f4f6;
+    --red:       #dc2626;
+    --blue:      #2563eb;
+    --amber:     #d97706;
+    --radius:    14px;
+    --shadow-sm: 0 1px 3px rgba(0,0,0,.08);
+    --shadow:    0 4px 16px rgba(0,0,0,.10);
+    --shadow-lg: 0 8px 32px rgba(0,0,0,.14);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--green-50);
+    color: var(--gray-700);
+    min-height: 100dvh;
+    overflow-x: hidden;
+    padding-bottom: 80px;
+  }
+
+  /* ── TOP HEADER ── */
+  .app-header {
+    background: linear-gradient(135deg, var(--green-800) 0%, var(--green-600) 100%);
+    color: white;
+    padding: 20px 20px 16px;
+    position: sticky; top: 0; z-index: 100;
+    box-shadow: var(--shadow);
+  }
+  .app-header h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 22px;
+    letter-spacing: 0.3px;
+  }
+  .app-header .sub { font-size: 12px; opacity: .75; margin-top: 1px; }
+
+  /* ── BOTTOM NAV ── */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: white;
+    border-top: 1px solid var(--gray-300);
+    display: flex;
+    z-index: 200;
+    padding-bottom: env(safe-area-inset-bottom);
+    box-shadow: 0 -2px 12px rgba(0,0,0,.08);
+  }
+  .nav-btn {
+    flex: 1; display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 10px 4px 8px;
+    border: none; background: none; cursor: pointer;
+    color: var(--gray-500); font-size: 10px;
+    font-family: 'Noto Sans KR', sans-serif;
+    transition: color .2s;
+    gap: 3px;
+  }
+  .nav-btn .icon { font-size: 22px; }
+  .nav-btn.active { color: var(--green-700); }
+  .nav-btn.active .nav-dot {
+    display: block; width: 4px; height: 4px;
+    background: var(--green-500); border-radius: 50%; margin-top: 2px;
+  }
+  .nav-dot { display: none; }
+
+  /* ── PAGE ── */
+  .page { display: none; padding: 0 0 24px; }
+  .page.active { display: block; }
+
+  /* ── SECTION HEADER ── */
+  .section-title {
+    font-size: 13px; font-weight: 600;
+    color: var(--green-700); text-transform: uppercase;
+    letter-spacing: 1px; padding: 20px 20px 10px;
+  }
+
+  /* ── CARD ── */
+  .card {
+    background: white; border-radius: var(--radius);
+    margin: 0 16px 12px;
+    box-shadow: var(--shadow-sm);
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 14px 16px 12px;
+    border-bottom: 1px solid var(--gray-100);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .card-title { font-size: 15px; font-weight: 600; }
+  .card-body { padding: 14px 16px; }
+
+  /* ── STAT GRID ── */
+  .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px 16px; }
+  .stat-item { background: var(--green-50); border-radius: 10px; padding: 12px; }
+  .stat-val { font-size: 26px; font-weight: 700; color: var(--green-800); font-family: 'Playfair Display', serif; }
+  .stat-lbl { font-size: 11px; color: var(--gray-500); margin-top: 2px; }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 11px; font-weight: 600;
+  }
+  .badge-green { background: var(--green-100); color: var(--green-800); }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  .badge-red   { background: #fee2e2; color: #991b1b; }
+  .badge-blue  { background: #dbeafe; color: #1e40af; }
+  .badge-gray  { background: var(--gray-100); color: var(--gray-500); }
+
+  /* ── LIST ROW ── */
+  .list-row {
+    display: flex; align-items: center;
+    padding: 12px 16px; border-bottom: 1px solid var(--gray-100);
+    gap: 12px;
+  }
+  .list-row:last-child { border-bottom: none; }
+  .list-icon { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; flex-shrink: 0; }
+  .list-icon.green { background: var(--green-100); }
+  .list-icon.amber { background: #fef3c7; }
+  .list-icon.blue  { background: #dbeafe; }
+  .list-main { flex: 1; }
+  .list-label { font-size: 14px; font-weight: 500; }
+  .list-sub { font-size: 12px; color: var(--gray-500); margin-top: 2px; }
+  .list-right { text-align: right; }
+  .list-val { font-size: 16px; font-weight: 700; color: var(--green-800); }
+
+  /* ── BUTTON ── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    gap: 6px; padding: 11px 18px; border-radius: 10px;
+    font-family: 'Noto Sans KR', sans-serif; font-size: 14px; font-weight: 500;
+    border: none; cursor: pointer; transition: all .2s;
+  }
+  .btn-primary { background: var(--green-700); color: white; }
+  .btn-primary:active { background: var(--green-800); }
+  .btn-outline { background: white; color: var(--green-700); border: 1.5px solid var(--green-600); }
+  .btn-full { width: 100%; }
+  .btn-sm { padding: 7px 14px; font-size: 12px; border-radius: 8px; }
+
+  /* ── INPUT ── */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 12px; font-weight: 600; color: var(--gray-500); margin-bottom: 5px; display: block; }
+  .form-input {
+    width: 100%; padding: 11px 14px; border-radius: 10px;
+    border: 1.5px solid var(--gray-300); font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    background: white; color: var(--gray-700);
+    transition: border-color .2s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus { outline: none; border-color: var(--green-500); }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,.45); z-index: 500;
+    align-items: flex-end;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: white; width: 100%; border-radius: 20px 20px 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    max-height: 85dvh; overflow-y: auto;
+    animation: slideUp .25s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 36px; height: 4px; background: var(--gray-300); border-radius: 2px; margin: 0 auto 18px; }
+  .modal-title { font-size: 17px; font-weight: 700; margin-bottom: 18px; }
+
+  /* ── NOTION CONNECT BANNER ── */
+  .notion-banner {
+    margin: 16px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+    border-radius: var(--radius);
+    border: 1px solid #c4b5fd;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .notion-banner .icon { font-size: 28px; }
+  .notion-banner-text .title { font-size: 14px; font-weight: 600; color: #4c1d95; }
+  .notion-banner-text .sub { font-size: 12px; color: #6d28d9; margin-top: 2px; }
+  .notion-banner .btn-connect {
+    margin-left: auto; flex-shrink: 0;
+    padding: 8px 14px; border-radius: 8px;
+    background: #7c3aed; color: white;
+    border: none; font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: 'Noto Sans KR', sans-serif;
+  }
+
+  /* ── WEATHER PAGE ── */
+  .weather-hero {
+    background: linear-gradient(160deg, var(--green-800), var(--green-600));
+    color: white; margin: 16px; border-radius: var(--radius);
+    padding: 20px; box-shadow: var(--shadow-lg);
+    position: relative; overflow: hidden;
+  }
+  .weather-hero::before {
+    content: ''; position: absolute; top: -30px; right: -30px;
+    width: 120px; height: 120px; border-radius: 50%;
+    background: rgba(255,255,255,.07);
+  }
+  .weather-hero .location { font-size: 12px; opacity: .8; margin-bottom: 4px; }
+  .weather-hero .temp { font-size: 56px; font-family: 'Playfair Display', serif; font-weight: 600; line-height: 1; }
+  .weather-hero .condition { font-size: 15px; margin-top: 4px; opacity: .9; }
+  .weather-hero .golf-score {
+    margin-top: 14px; padding: 10px 14px; border-radius: 10px;
+    background: rgba(255,255,255,.15);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .golf-score-label { font-size: 12px; opacity: .85; }
+  .golf-score-val { font-size: 15px; font-weight: 700; margin-left: auto; }
+
+  .weather-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 0 16px 0; }
+  .weather-item { background: white; border-radius: 12px; padding: 12px 10px; text-align: center; box-shadow: var(--shadow-sm); }
+  .weather-item .wi-icon { font-size: 22px; margin-bottom: 4px; }
+  .weather-item .wi-val { font-size: 16px; font-weight: 700; color: var(--green-800); }
+  .weather-item .wi-lbl { font-size: 10px; color: var(--gray-500); margin-top: 2px; }
+
+  .forecast-row {
+    display: flex; align-items: center; padding: 11px 16px;
+    border-bottom: 1px solid var(--gray-100); gap: 12px;
+  }
+  .forecast-row:last-child { border-bottom: none; }
+  .forecast-day { width: 48px; font-size: 13px; font-weight: 500; }
+  .forecast-icon { font-size: 20px; }
+  .forecast-bar-wrap { flex: 1; }
+  .forecast-bar { height: 5px; background: var(--gray-300); border-radius: 3px; overflow: hidden; }
+  .forecast-bar-fill { height: 100%; border-radius: 3px; }
+  .forecast-temps { display: flex; justify-content: space-between; margin-top: 2px; }
+  .forecast-temp { font-size: 11px; color: var(--gray-500); }
+  .forecast-good { width: 36px; text-align: right; font-size: 11px; font-weight: 600; }
+  .forecast-good.good { color: var(--green-600); }
+  .forecast-good.bad { color: var(--red); }
+
+  /* ── SCORE CHART ── */
+  .chart-wrap { padding: 16px; }
+  .mini-bar-row { display: flex; align-items: flex-end; gap: 6px; height: 70px; }
+  .mini-bar {
+    flex: 1; border-radius: 5px 5px 0 0;
+    background: linear-gradient(to top, var(--green-700), var(--green-400));
+    min-height: 10px; transition: height .5s ease;
+    position: relative; cursor: pointer;
+  }
+  .mini-bar .bar-label {
+    position: absolute; bottom: -20px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--gray-500); white-space: nowrap;
+  }
+  .mini-bar .bar-val {
+    position: absolute; top: -18px; left: 50%; transform: translateX(-50%);
+    font-size: 11px; font-weight: 700; color: var(--green-800); white-space: nowrap;
+  }
+  .chart-axis { display: flex; gap: 6px; margin-top: 24px; }
+  .chart-axis-item { flex: 1; text-align: center; font-size: 10px; color: var(--gray-500); }
+
+  /* ── PILL TABS ── */
+  .pill-tabs { display: flex; gap: 8px; padding: 0 16px 12px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .pill-tabs::-webkit-scrollbar { display: none; }
+  .pill { padding: 7px 16px; border-radius: 20px; border: 1.5px solid var(--gray-300); font-size: 13px; font-weight: 500; cursor: pointer; white-space: nowrap; background: white; color: var(--gray-500); font-family: 'Noto Sans KR', sans-serif; transition: all .2s; }
+  .pill.active { background: var(--green-700); color: white; border-color: var(--green-700); }
+
+  /* ── EMPTY STATE ── */
+  .empty { text-align: center; padding: 40px 20px; color: var(--gray-500); }
+  .empty .empty-icon { font-size: 48px; margin-bottom: 12px; }
+  .empty p { font-size: 14px; }
+
+  /* ── FAB ── */
+  .fab {
+    position: fixed; bottom: 88px; right: 20px;
+    width: 52px; height: 52px; border-radius: 50%;
+    background: var(--green-700); color: white;
+    font-size: 24px; border: none; cursor: pointer;
+    box-shadow: 0 4px 16px rgba(29,109,64,.4);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 150; transition: transform .2s;
+  }
+  .fab:active { transform: scale(.92); }
+
+  /* ── LOADING ── */
+  .loader { text-align: center; padding: 30px; color: var(--gray-500); font-size: 13px; }
+  .spinner { width: 28px; height: 28px; border: 3px solid var(--green-200); border-top-color: var(--green-600); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── CLUB TABLE ── */
+  .club-grid { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 0; }
+  .club-head { font-size: 11px; color: var(--gray-500); padding: 8px 16px; border-bottom: 1px solid var(--gray-100); font-weight: 600; }
+  .club-cell { font-size: 13px; padding: 10px 16px; border-bottom: 1px solid var(--gray-100); }
+  .club-cell:last-child, .club-head:last-child { text-align: right; }
+  .dist-badge { display: inline-block; background: var(--green-100); color: var(--green-800); padding: 2px 8px; border-radius: 6px; font-weight: 600; font-size: 12px; }
+
+  /* ── SCHEDULE ── */
+  .cal-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green-500); margin-top: 4px; }
+
+  /* HOME HERO */
+  .home-hero {
+    background: linear-gradient(135deg, var(--green-800) 0%, var(--green-500) 100%);
+    padding: 20px; margin: 16px; border-radius: var(--radius);
+    color: white; box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
+  }
+  .home-hero::after {
+    content: '⛳'; position: absolute; bottom: -8px; right: 12px;
+    font-size: 68px; opacity: .15;
+  }
+  .home-hero .greet { font-size: 13px; opacity: .8; }
+  .home-hero .next-round { font-size: 17px; font-weight: 700; margin-top: 6px; }
+  .home-hero .meta { font-size: 12px; opacity: .75; margin-top: 4px; }
+  .home-quick { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 0 16px; }
+  .quick-card {
+    background: white; border-radius: var(--radius); padding: 14px;
+    box-shadow: var(--shadow-sm); cursor: pointer;
+    display: flex; flex-direction: column; gap: 6px;
+    transition: transform .15s;
+  }
+  .quick-card:active { transform: scale(.97); }
+  .quick-card .qc-icon { font-size: 24px; }
+  .quick-card .qc-label { font-size: 13px; font-weight: 600; color: var(--gray-700); }
+  .quick-card .qc-sub { font-size: 11px; color: var(--gray-500); }
+
+  .pwa-tip {
+    margin: 12px 16px; padding: 12px 14px;
+    background: #fffbeb; border: 1px solid #fbbf24;
+    border-radius: 10px; font-size: 12px; color: #92400e;
+    display: flex; align-items: flex-start; gap: 8px;
+  }
+
+  /* Notion API input */
+  .api-form { padding: 0 16px 16px; }
+  .api-form .form-input.small { font-size: 12px; padding: 9px 12px; }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="app-header">
+  <h1>⛳ My Golf Manager</h1>
+  <div class="sub" id="header-sub">테디밸리 골프 관리 앱</div>
+</div>
+
+<!-- PAGES -->
+
+<!-- 🏠 HOME -->
+<div class="page active" id="page-home">
+  <div class="home-hero">
+    <div class="greet">안녕하세요! 오늘도 좋은 라운드를 🌿</div>
+    <div class="next-round" id="next-round-text">다음 라운드 로딩 중...</div>
+    <div class="meta" id="next-round-meta"></div>
+  </div>
+
+  <div class="pwa-tip" id="pwa-tip">
+    📲 <span><b>앱으로 설치하기:</b> Chrome 주소창 우측 메뉴 → "홈 화면에 추가" 선택</span>
+  </div>
+
+  <div class="section-title">빠른 메뉴</div>
+  <div class="home-quick">
+    <div class="quick-card" onclick="goTab('score')">
+      <div class="qc-icon">🏆</div>
+      <div class="qc-label">스코어 기록</div>
+      <div class="qc-sub">라운드 추가 & 조회</div>
+    </div>
+    <div class="quick-card" onclick="goTab('weather')">
+      <div class="qc-icon">🌤️</div>
+      <div class="qc-label">골프 날씨</div>
+      <div class="qc-sub">테디밸리 현재 날씨</div>
+    </div>
+    <div class="quick-card" onclick="goTab('club')">
+      <div class="qc-icon">🪄</div>
+      <div class="qc-label">클럽 관리</div>
+      <div class="qc-sub">거리 & 구성 확인</div>
+    </div>
+    <div class="quick-card" onclick="goTab('log')">
+      <div class="qc-icon">📓</div>
+      <div class="qc-label">연습 일지</div>
+      <div class="qc-sub">레슨 & 연습 기록</div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:8px;">최근 스코어</div>
+  <div id="home-recent-scores">
+    <div class="card"><div class="loader"><div class="spinner"></div>불러오는 중...</div></div>
+  </div>
+
+  <!-- Notion 연결 배너 -->
+  <div class="notion-banner" id="notion-banner">
+    <div class="icon">🔗</div>
+    <div class="notion-banner-text">
+      <div class="title">Notion 연동 설정</div>
+      <div class="sub">Integration Token을 입력하면 실시간 데이터를 불러옵니다</div>
+    </div>
+    <button class="btn-connect" onclick="openNotionSetup()">설정</button>
+  </div>
+</div>
+
+<!-- 🏆 SCORE -->
+<div class="page" id="page-score">
+  <div class="section-title">라운드 스코어</div>
+
+  <div class="pill-tabs" id="score-tabs">
+    <div class="pill active" onclick="filterScores('all', this)">전체</div>
+    <div class="pill" onclick="filterScores('teddy', this)">테디밸리</div>
+    <div class="pill" onclick="filterScores('other', this)">기타 코스</div>
+  </div>
+
+  <div id="score-list">
+    <div class="card"><div class="loader"><div class="spinner"></div>Notion에서 불러오는 중...</div></div>
+  </div>
+
+  <div class="section-title">스코어 추이</div>
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">최근 라운드 추이</div>
+      <span class="badge badge-green" id="avg-score-badge">평균 -</span>
+    </div>
+    <div class="chart-wrap" id="score-chart">
+      <div class="empty"><div class="empty-icon">📊</div><p>데이터 로딩 중...</p></div>
+    </div>
+  </div>
+</div>
+
+<!-- 🪄 CLUB -->
+<div class="page" id="page-club">
+  <div class="section-title">클럽 & 거리</div>
+
+  <div class="card">
+    <div class="card-header">
+      <div class="card-title">현재 클럽 구성</div>
+      <span class="badge badge-green" id="club-count-badge">14개</span>
+    </div>
+    <div class="club-grid">
+      <div class="club-head">클럽</div>
+      <div class="club-head" style="text-align:center;">종류</div>
+      <div class="club-head">거리</div>
+      <!-- 데이터는 JS로 주입 -->
+    </div>
+    <div id="club-rows"></div>
+  </div>
+
+  <div class="section-title">클럽 갭 분석</div>
+  <div class="card" id="club-gap-card">
+    <div class="card-body">
+      <div id="gap-analysis"></div>
+    </div>
+  </div>
+
+  <div class="section-title">구매 추천 메모</div>
+  <div class="card">
+    <div class="card-body" id="buy-reco">
+      <div class="loader"><div class="spinner"></div>Notion에서 불러오는 중...</div>
+    </div>
+  </div>
+</div>
+
+<!-- 📓 LOG -->
+<div class="page" id="page-log">
+  <div class="section-title">연습 & 레슨 일지</div>
+
+  <div class="pill-tabs">
+    <div class="pill active" onclick="filterLogs('all', this)">전체</div>
+    <div class="pill" onclick="filterLogs('lesson', this)">레슨</div>
+    <div class="pill" onclick="filterLogs('practice', this)">연습</div>
+  </div>
+
+  <div id="log-list">
+    <div class="card"><div class="loader"><div class="spinner"></div>Notion에서 불러오는 중...</div></div>
+  </div>
+</div>
+
+<!-- 📅 SCHEDULE -->
+<div class="page" id="page-schedule">
+  <div class="section-title">골프 일정</div>
+  <div id="schedule-list">
+    <div class="card"><div class="loader"><div class="spinner"></div>Notion에서 불러오는 중...</div></div>
+  </div>
+</div>
+
+<!-- 🌤️ WEATHER -->
+<div class="page" id="page-weather">
+  <div class="weather-hero" id="weather-hero">
+    <div class="location">📍 테디밸리 골프앤리조트, 제주 안덕면</div>
+    <div style="display:flex;align-items:flex-end;gap:12px;margin-top:8px;">
+      <div class="temp" id="w-temp">--°</div>
+      <div>
+        <div class="condition" id="w-condition">날씨 불러오는 중...</div>
+        <div style="font-size:11px;opacity:.75;margin-top:2px;" id="w-feels">체감 --°</div>
+      </div>
+    </div>
+    <div class="golf-score" id="golf-score-band">
+      <span style="font-size:20px;" id="gs-icon">⛳</span>
+      <span class="golf-score-label" id="gs-label">골프 적합도 계산 중...</span>
+      <span class="golf-score-val" id="gs-val"></span>
+    </div>
+  </div>
+
+  <div class="weather-grid">
+    <div class="weather-item">
+      <div class="wi-icon">💨</div>
+      <div class="wi-val" id="w-wind">--</div>
+      <div class="wi-lbl">풍속 (m/s)</div>
+    </div>
+    <div class="weather-item">
+      <div class="wi-icon">💧</div>
+      <div class="wi-val" id="w-humid">--%</div>
+      <div class="wi-lbl">습도</div>
+    </div>
+    <div class="weather-item">
+      <div class="wi-icon">☁️</div>
+      <div class="wi-val" id="w-cloud">--%</div>
+      <div class="wi-lbl">구름</div>
+    </div>
+  </div>
+
+  <div class="section-title" style="margin-top:8px;">7일 날씨 예보</div>
+  <div class="card" id="forecast-card">
+    <div class="loader"><div class="spinner"></div>예보 불러오는 중...</div>
+  </div>
+
+  <div class="section-title">골프 날씨 기준</div>
+  <div class="card">
+    <div class="card-body" style="font-size:13px;line-height:1.8;color:var(--gray-700);">
+      <b>🟢 최적</b>: 기온 15–25°C, 풍속 4m/s 이하, 강수 없음<br>
+      <b>🟡 보통</b>: 기온 10–28°C, 풍속 7m/s 이하<br>
+      <b>🔴 불량</b>: 강수 있거나 풍속 8m/s 초과<br>
+      <br>
+      <span style="font-size:12px;color:var(--gray-500);">※ 날씨 데이터: Open-Meteo API (제주 안덕면 기준)</span>
+    </div>
+  </div>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav">
+  <button class="nav-btn active" onclick="goTab('home')" id="nav-home">
+    <span class="icon">🏠</span>
+    <span>홈</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" onclick="goTab('score')" id="nav-score">
+    <span class="icon">🏆</span>
+    <span>스코어</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" onclick="goTab('club')" id="nav-club">
+    <span class="icon">🪄</span>
+    <span>클럽</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" onclick="goTab('log')" id="nav-log">
+    <span class="icon">📓</span>
+    <span>일지</span>
+    <span class="nav-dot"></span>
+  </button>
+  <button class="nav-btn" onclick="goTab('weather')" id="nav-weather">
+    <span class="icon">🌤️</span>
+    <span>날씨</span>
+    <span class="nav-dot"></span>
+  </button>
+</nav>
+
+<!-- FAB -->
+<button class="fab" id="fab-btn" onclick="openFab()">＋</button>
+
+<!-- MODALS -->
+
+<!-- Notion 설정 Modal -->
+<div class="modal-overlay" id="modal-notion">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🔗 Notion 연동 설정</div>
+    <div style="font-size:13px;color:var(--gray-500);margin-bottom:16px;line-height:1.6;">
+      Notion Integration Token을 입력하면 기존 골프 DB 데이터를 자동으로 불러옵니다.<br>
+      <a href="https://www.notion.so/my-integrations" target="_blank" style="color:var(--green-700);">notion.so/my-integrations</a>에서 발급 가능합니다.
+    </div>
+    <div class="form-group">
+      <label class="form-label">Integration Token (secret_...)</label>
+      <input class="form-input" type="password" id="notion-token-input" placeholder="secret_xxxxxxxxxxxx">
+    </div>
+    <div class="form-group">
+      <label class="form-label">라운드 DB ID</label>
+      <input class="form-input small" type="text" id="notion-score-db" placeholder="266b1c60-6a2b-4e82-8838-7190385e1acd">
+    </div>
+    <div class="form-group">
+      <label class="form-label">연습/레슨 DB ID</label>
+      <input class="form-input small" type="text" id="notion-log-db" placeholder="9693dd93-3b36-4bfc-82a0-43e1a1dc1c31">
+    </div>
+    <div class="form-group">
+      <label class="form-label">클럽 DB ID</label>
+      <input class="form-input small" type="text" id="notion-club-db" placeholder="f066108d-75ed-422b-af25-69423f455dcd">
+    </div>
+    <button class="btn btn-primary btn-full" onclick="saveNotionSettings()">연결하기</button>
+    <button class="btn btn-outline btn-full" style="margin-top:8px;" onclick="closeModal('modal-notion')">취소</button>
+  </div>
+</div>
+
+<!-- 스코어 입력 Modal -->
+<div class="modal-overlay" id="modal-score">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🏆 라운드 스코어 기록</div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" type="date" id="score-date">
+    </div>
+    <div class="form-group">
+      <label class="form-label">골프장</label>
+      <input class="form-input" type="text" id="score-course" placeholder="테디밸리골프앤리조트">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">총 스코어</label>
+        <input class="form-input" type="number" id="score-total" placeholder="98">
+      </div>
+      <div class="form-group">
+        <label class="form-label">파 대비</label>
+        <input class="form-input" type="text" id="score-par" placeholder="+26">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">GIR</label>
+        <input class="form-input" type="number" id="score-gir" placeholder="12">
+      </div>
+      <div class="form-group">
+        <label class="form-label">퍼팅수</label>
+        <input class="form-input" type="number" id="score-putt" placeholder="34">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">메모</label>
+      <textarea class="form-input" rows="3" id="score-memo" placeholder="오늘 라운드 메모..."></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="submitScore()">기록하기</button>
+    <button class="btn btn-outline btn-full" style="margin-top:8px;" onclick="closeModal('modal-score')">취소</button>
+  </div>
+</div>
+
+<!-- 연습 일지 Modal -->
+<div class="modal-overlay" id="modal-log">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📓 연습/레슨 기록</div>
+    <div class="form-group">
+      <label class="form-label">날짜</label>
+      <input class="form-input" type="date" id="log-date">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">종류</label>
+        <select class="form-input" id="log-type">
+          <option value="연습">연습</option>
+          <option value="레슨">레슨</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">장소/담당 프로</label>
+        <input class="form-input" type="text" id="log-place" placeholder="김동헌 프로">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">주요 내용</label>
+      <textarea class="form-input" rows="4" id="log-content" placeholder="다운스윙 시퀀스, 릴리즈 타이밍..."></textarea>
+    </div>
+    <button class="btn btn-primary btn-full" onclick="submitLog()">저장하기</button>
+    <button class="btn btn-outline btn-full" style="margin-top:8px;" onclick="closeModal('modal-log')">취소</button>
+  </div>
+</div>
+
+<!-- FAB 선택 Modal -->
+<div class="modal-overlay" id="modal-fab">
+  <div class="modal" style="padding-bottom:calc(16px + env(safe-area-inset-bottom));">
+    <div class="modal-handle"></div>
+    <div class="modal-title">무엇을 기록할까요?</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <button class="btn btn-primary btn-full" style="font-size:15px;padding:14px;" onclick="openAddScore()">🏆 라운드 스코어 기록</button>
+      <button class="btn btn-outline btn-full" style="font-size:15px;padding:14px;" onclick="openAddLog()">📓 연습 / 레슨 일지 기록</button>
+      <button class="btn btn-outline btn-full" style="font-size:15px;padding:14px;" onclick="closeModal('modal-fab');goTab('schedule')">📅 일정 추가 (캘린더 앱)</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════
+const STATE = {
+  notionToken: localStorage.getItem('notion_token') || '',
+  scoreDbId: localStorage.getItem('notion_score_db') || '266b1c60-6a2b-4e82-8838-7190385e1acd',
+  logDbId: localStorage.getItem('notion_log_db') || '9693dd93-3b36-4bfc-82a0-43e1a1dc1c31',
+  clubDbId: localStorage.getItem('notion_club_db') || 'f066108d-75ed-422b-af25-69423f455dcd',
+  scores: [],
+  logs: [],
+  clubs: [],
+  schedule: [],
+  currentTab: 'home'
+};
+
+// ══════════════════════════════════════════
+//  NAVIGATION
+// ══════════════════════════════════════════
+function goTab(tab) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + tab).classList.add('active');
+  document.getElementById('nav-' + tab).classList.add('active');
+  STATE.currentTab = tab;
+  if (tab === 'weather') loadWeather();
+  if (tab === 'score') renderScores();
+  if (tab === 'log') renderLogs();
+  if (tab === 'club') renderClubs();
+  if (tab === 'schedule') renderSchedule();
+  window.scrollTo(0, 0);
+}
+
+// ══════════════════════════════════════════
+//  MODAL
+// ══════════════════════════════════════════
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.body.style.overflow = '';
+}
+function openFab() { openModal('modal-fab'); }
+function openAddScore() {
+  closeModal('modal-fab');
+  document.getElementById('score-date').value = new Date().toISOString().split('T')[0];
+  document.getElementById('score-course').value = '테디밸리골프앤리조트';
+  openModal('modal-score');
+}
+function openAddLog() {
+  closeModal('modal-fab');
+  document.getElementById('log-date').value = new Date().toISOString().split('T')[0];
+  openModal('modal-log');
+}
+function openNotionSetup() {
+  document.getElementById('notion-token-input').value = STATE.notionToken;
+  document.getElementById('notion-score-db').value = STATE.scoreDbId;
+  document.getElementById('notion-log-db').value = STATE.logDbId;
+  document.getElementById('notion-club-db').value = STATE.clubDbId;
+  openModal('modal-notion');
+}
+
+// ══════════════════════════════════════════
+//  NOTION SETTINGS
+// ══════════════════════════════════════════
+function saveNotionSettings() {
+  const token = document.getElementById('notion-token-input').value.trim();
+  const scoreDb = document.getElementById('notion-score-db').value.trim();
+  const logDb = document.getElementById('notion-log-db').value.trim();
+  const clubDb = document.getElementById('notion-club-db').value.trim();
+  if (!token) { alert('Token을 입력해주세요'); return; }
+  STATE.notionToken = token;
+  STATE.scoreDbId = scoreDb || STATE.scoreDbId;
+  STATE.logDbId = logDb || STATE.logDbId;
+  STATE.clubDbId = clubDb || STATE.clubDbId;
+  localStorage.setItem('notion_token', token);
+  localStorage.setItem('notion_score_db', STATE.scoreDbId);
+  localStorage.setItem('notion_log_db', STATE.logDbId);
+  localStorage.setItem('notion_club_db', STATE.clubDbId);
+  closeModal('modal-notion');
+  document.getElementById('notion-banner').style.display = 'none';
+  loadAllData();
+}
+
+// ══════════════════════════════════════════
+//  NOTION API
+// ══════════════════════════════════════════
+async function notionQuery(dbId) {
+  if (!STATE.notionToken) return null;
+  try {
+    const res = await fetch(`https://api.notion.com/v1/databases/${dbId}/query`, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + STATE.notionToken,
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ sorts: [{ timestamp: 'created_time', direction: 'descending' }] })
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.results || [];
+  } catch(e) { return null; }
+}
+
+function getProp(page, name) {
+  const props = page.properties;
+  if (!props[name]) return '';
+  const p = props[name];
+  if (p.type === 'title') return p.title.map(t => t.plain_text).join('');
+  if (p.type === 'rich_text') return p.rich_text.map(t => t.plain_text).join('');
+  if (p.type === 'number') return p.number;
+  if (p.type === 'date') return p.date?.start || '';
+  if (p.type === 'select') return p.select?.name || '';
+  if (p.type === 'multi_select') return p.multi_select.map(s => s.name).join(', ');
+  if (p.type === 'checkbox') return p.checkbox;
+  return '';
+}
+
+// ══════════════════════════════════════════
+//  LOAD ALL
+// ══════════════════════════════════════════
+async function loadAllData() {
+  await Promise.all([loadScores(), loadLogs(), loadClubs()]);
+  renderHomeRecent();
+  loadNextSchedule();
+}
+
+async function loadScores() {
+  if (!STATE.notionToken) { STATE.scores = getSampleScores(); renderHomeRecent(); return; }
+  const rows = await notionQuery(STATE.scoreDbId);
+  if (!rows) { STATE.scores = getSampleScores(); return; }
+  STATE.scores = rows.map(r => ({
+    id: r.id,
+    date: getProp(r, '날짜') || getProp(r, 'Date'),
+    course: getProp(r, '골프장') || getProp(r, 'Course') || getProp(r, '이름') || '미기재',
+    total: getProp(r, '총 스코어') || getProp(r, '스코어') || getProp(r, 'Score') || 0,
+    par: getProp(r, '파 대비') || '',
+    gir: getProp(r, 'GIR') || 0,
+    putt: getProp(r, '퍼팅수') || 0,
+    memo: getProp(r, '메모') || ''
+  })).filter(s => s.total);
+}
+
+async function loadLogs() {
+  if (!STATE.notionToken) { STATE.logs = getSampleLogs(); return; }
+  const rows = await notionQuery(STATE.logDbId);
+  if (!rows) { STATE.logs = getSampleLogs(); return; }
+  STATE.logs = rows.map(r => ({
+    id: r.id,
+    date: getProp(r, '날짜') || getProp(r, 'Date'),
+    type: getProp(r, '종류') || getProp(r, 'Type') || '연습',
+    place: getProp(r, '장소') || getProp(r, '담당 프로') || getProp(r, 'Place') || '',
+    content: getProp(r, '주요 내용') || getProp(r, '내용') || getProp(r, 'Content') || getProp(r, '이름') || ''
+  }));
+}
+
+async function loadClubs() {
+  if (!STATE.notionToken) { STATE.clubs = getDefaultClubs(); renderClubs(); return; }
+  const rows = await notionQuery(STATE.clubDbId);
+  if (!rows || rows.length === 0) { STATE.clubs = getDefaultClubs(); renderClubs(); return; }
+  STATE.clubs = rows.map(r => ({
+    name: getProp(r, '클럽명') || getProp(r, '이름') || getProp(r, 'Name') || '',
+    type: getProp(r, '종류') || getProp(r, 'Type') || '',
+    dist: getProp(r, '거리(m)') || getProp(r, '거리') || getProp(r, 'Distance') || 0
+  })).filter(c => c.name);
+  renderClubs();
+}
+
+function loadNextSchedule() {
+  // Try Google Calendar or just show placeholder
+  const d = document.getElementById('next-round-text');
+  const m = document.getElementById('next-round-meta');
+  d.textContent = '다음 라운드: 3월 21일 (토)';
+  m.textContent = '📍 테디밸리골프앤리조트 · 오후 1:00';
+}
+
+// ══════════════════════════════════════════
+//  SAMPLE DATA (Notion 연결 전)
+// ══════════════════════════════════════════
+function getSampleScores() {
+  return [
+    { date: '2026-03-17', course: '테디밸리골프앤리조트', total: 102, par: '+30', gir: 12, putt: 34, memo: '샘플 데이터' },
+    { date: '2026-02-28', course: '테디밸리골프앤리조트', total: 99,  par: '+27', gir: 14, putt: 32, memo: '' },
+    { date: '2026-02-10', course: '핀크스GC',              total: 105, par: '+33', gir: 10, putt: 36, memo: '' },
+  ];
+}
+function getSampleLogs() {
+  return [
+    { date: '2026-03-15', type: '레슨', place: '김동헌 프로', content: '다운스윙 시퀀스, 릴리즈 타이밍 교정' },
+    { date: '2026-03-10', type: '연습', place: '테디밸리 연습장', content: '아이언 어프로치 200구' },
+  ];
+}
+function getDefaultClubs() {
+  return [
+    { name: 'Callaway Elite Mini Driver', type: '드라이버', dist: 200 },
+    { name: 'TaylorMade QI35 Utility #3', type: '유틸리티', dist: 180 },
+    { name: 'TaylorMade QI35 Utility #4', type: '유틸리티', dist: 170 },
+    { name: 'Ping Iron 5i', type: '아이언', dist: 170 },
+    { name: 'Ping Iron 6i', type: '아이언', dist: 160 },
+    { name: 'Ping Iron 7i', type: '아이언', dist: 150 },
+    { name: 'Ping Iron 8i', type: '아이언', dist: 140 },
+    { name: 'Ping Iron 9i', type: '아이언', dist: 130 },
+    { name: 'Ping Iron PW', type: '아이언', dist: 120 },
+    { name: 'Ping Wedge 50°', type: '웨지', dist: 105 },
+    { name: 'Ping Wedge 56°', type: '웨지', dist: 80 },
+  ];
+}
+
+// ══════════════════════════════════════════
+//  RENDER: HOME
+// ══════════════════════════════════════════
+function renderHomeRecent() {
+  const el = document.getElementById('home-recent-scores');
+  const scores = STATE.scores.slice(0, 3);
+  if (!scores.length) { el.innerHTML = '<div class="card"><div class="empty"><div class="empty-icon">🏌️</div><p>아직 라운드 기록이 없어요</p></div></div>'; return; }
+  el.innerHTML = '<div class="card">' + scores.map(s => `
+    <div class="list-row">
+      <div class="list-icon green">🏆</div>
+      <div class="list-main">
+        <div class="list-label">${s.course}</div>
+        <div class="list-sub">${s.date} · GIR ${s.gir || '-'}</div>
+      </div>
+      <div class="list-right">
+        <div class="list-val">${s.total}</div>
+        <div style="font-size:11px;color:var(--gray-500)">${s.par || ''}</div>
+      </div>
+    </div>
+  `).join('') + '</div>';
+
+  if (STATE.notionToken) document.getElementById('notion-banner').style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+//  RENDER: SCORES
+// ══════════════════════════════════════════
+let scoreFilter = 'all';
+function filterScores(f, el) {
+  scoreFilter = f;
+  document.querySelectorAll('#score-tabs .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderScores();
+}
+function renderScores() {
+  if (!STATE.scores.length) { loadScores().then(renderScoreList); } else { renderScoreList(); }
+}
+function renderScoreList() {
+  let data = STATE.scores;
+  if (scoreFilter === 'teddy') data = data.filter(s => s.course.includes('테디밸리'));
+  if (scoreFilter === 'other') data = data.filter(s => !s.course.includes('테디밸리'));
+
+  const el = document.getElementById('score-list');
+  if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">🔍</div><p>해당 조건의 기록이 없어요</p></div>'; }
+  else el.innerHTML = '<div class="card">' + data.map(s => `
+    <div class="list-row">
+      <div class="list-icon green">⛳</div>
+      <div class="list-main">
+        <div class="list-label">${s.course}</div>
+        <div class="list-sub">${s.date} · GIR ${s.gir || '-'} · 퍼팅 ${s.putt || '-'}</div>
+      </div>
+      <div class="list-right">
+        <div class="list-val">${s.total}</div>
+        <span class="badge ${scoreColor(s.total)}">${s.par || ''}</span>
+      </div>
+    </div>
+  `).join('') + '</div>';
+
+  renderScoreChart(data);
+}
+function scoreColor(n) {
+  if (n <= 90) return 'badge-green';
+  if (n <= 100) return 'badge-amber';
+  return 'badge-red';
+}
+function renderScoreChart(data) {
+  const el = document.getElementById('score-chart');
+  const recent = data.slice(0, 6).reverse();
+  if (!recent.length) return;
+  const max = Math.max(...recent.map(s => s.total));
+  const min = Math.min(...recent.map(s => s.total));
+  const avg = Math.round(recent.reduce((a,s) => a + Number(s.total), 0) / recent.length);
+  document.getElementById('avg-score-badge').textContent = '평균 ' + avg;
+  const bars = recent.map(s => {
+    const h = Math.max(15, Math.round(((s.total - min + 5) / (max - min + 10)) * 65));
+    return `<div class="mini-bar" style="height:${h}px">
+      <div class="bar-val">${s.total}</div>
+      <div class="bar-label">${(s.date||'').slice(5)}</div>
+    </div>`;
+  }).join('');
+  el.innerHTML = `<div class="mini-bar-row">${bars}</div>`;
+}
+
+// ══════════════════════════════════════════
+//  RENDER: CLUBS
+// ══════════════════════════════════════════
+function renderClubs() {
+  const clubs = STATE.clubs;
+  document.getElementById('club-count-badge').textContent = clubs.length + '개';
+  const rows = document.getElementById('club-rows');
+  rows.innerHTML = clubs.map(c => `
+    <div class="club-grid">
+      <div class="club-cell" style="font-weight:500">${c.name}</div>
+      <div class="club-cell" style="text-align:center"><span class="badge badge-gray">${c.type}</span></div>
+      <div class="club-cell"><span class="dist-badge">${c.dist}m</span></div>
+    </div>
+  `).join('');
+
+  // Gap Analysis
+  const sorted = [...clubs].filter(c => c.dist > 0).sort((a,b) => b.dist - a.dist);
+  const gaps = [];
+  for (let i = 0; i < sorted.length - 1; i++) {
+    const g = sorted[i].dist - sorted[i+1].dist;
+    if (g === 0) gaps.push(`<div style="margin-bottom:8px;padding:8px 12px;background:#fee2e2;border-radius:8px;font-size:13px;">⚠️ <b>${sorted[i].name}</b>와 <b>${sorted[i+1].name}</b> 거리 중복 (${sorted[i].dist}m)</div>`);
+    else if (g > 20) gaps.push(`<div style="margin-bottom:8px;padding:8px 12px;background:#fef3c7;border-radius:8px;font-size:13px;">🔶 <b>${sorted[i].name} → ${sorted[i+1].name}</b> 갭 ${g}m (큰 갭)</div>`);
+  }
+  const gapEl = document.getElementById('gap-analysis');
+  gapEl.innerHTML = gaps.length ? gaps.join('') + '<div style="font-size:12px;color:var(--gray-500);margin-top:6px;">갭이 큰 구간은 클럽 추가를 고려해보세요</div>'
+    : '<div style="font-size:13px;color:var(--green-700)">✅ 클럽 갭이 고르게 분배되어 있습니다</div>';
+
+  // Buy reco
+  document.getElementById('buy-reco').innerHTML = `
+    <div style="font-size:13px;line-height:1.8;">
+      <b>📌 최근 분석 요약 (2026.03.17)</b><br>
+      • 5번 아이언(170m)과 유틸리티#4(170m) <span class="badge badge-red">중복</span> → 5번 아이언 제거 고려<br>
+      • 50°↔56° 웨지 갭 25m <span class="badge badge-amber">큰 갭</span> → 54° 추가 추천<br>
+      • 페어웨이 우드 추가 시 <b>5번 우드</b> 권장 (Ping G440 Max)<br>
+      <span style="font-size:11px;color:var(--gray-500)">※ 노션 메모 '클럽 구성 분석 & 구매 추천 (2026.03.17)' 참고</span>
+    </div>`;
+}
+
+// ══════════════════════════════════════════
+//  RENDER: LOGS
+// ══════════════════════════════════════════
+let logFilter = 'all';
+function filterLogs(f, el) {
+  logFilter = f;
+  document.querySelectorAll('#page-log .pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderLogs();
+}
+function renderLogs() {
+  if (!STATE.logs.length) { loadLogs().then(renderLogList); } else { renderLogList(); }
+}
+function renderLogList() {
+  let data = STATE.logs;
+  if (logFilter === 'lesson') data = data.filter(l => l.type === '레슨');
+  if (logFilter === 'practice') data = data.filter(l => l.type !== '레슨');
+  const el = document.getElementById('log-list');
+  if (!data.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📓</div><p>기록이 없어요</p></div>'; return; }
+  el.innerHTML = '<div class="card">' + data.map(l => `
+    <div class="list-row" style="align-items:flex-start;">
+      <div class="list-icon ${l.type==='레슨'?'amber':'blue'}">${l.type==='레슨'?'🎓':'🏋️'}</div>
+      <div class="list-main">
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="list-label">${l.place || l.type}</div>
+          <span class="badge ${l.type==='레슨'?'badge-amber':'badge-blue'}">${l.type}</span>
+        </div>
+        <div class="list-sub" style="margin-top:4px;">${l.content}</div>
+        <div style="font-size:11px;color:var(--gray-500);margin-top:3px;">${l.date}</div>
+      </div>
+    </div>
+  `).join('') + '</div>';
+}
+
+// ══════════════════════════════════════════
+//  RENDER: SCHEDULE
+// ══════════════════════════════════════════
+function renderSchedule() {
+  const upcoming = [
+    { date: '2026-03-21', day: '토', title: '라운드 - 테디밸리', time: '13:00', type: 'round' },
+    { date: '2026-03-21', day: '토', title: '저녁 식사 LMNT', time: '19:00', type: 'social' },
+  ];
+  const el = document.getElementById('schedule-list');
+  if (!upcoming.length) { el.innerHTML = '<div class="empty"><div class="empty-icon">📅</div><p>예정된 일정이 없어요</p></div>'; return; }
+  el.innerHTML = '<div class="card">' + upcoming.map(s => `
+    <div class="list-row">
+      <div class="list-icon ${s.type==='round'?'green':'amber'}">${s.type==='round'?'⛳':'🍽️'}</div>
+      <div class="list-main">
+        <div class="list-label">${s.title}</div>
+        <div class="list-sub">${s.date} (${s.day}) · ${s.time}</div>
+      </div>
+      <span class="badge ${s.type==='round'?'badge-green':'badge-amber'}">${s.type==='round'?'라운드':'기타'}</span>
+    </div>
+  `).join('') + '</div>';
+  el.innerHTML += `<div style="padding:8px 16px;font-size:12px;color:var(--gray-500);">📌 일정 추가는 구글 캘린더(Claude 연동)에서 관리됩니다</div>`;
+}
+
+// ══════════════════════════════════════════
+//  WEATHER  (Open-Meteo, 제주 안덕면)
+// ══════════════════════════════════════════
+const TEDDY_LAT = 33.32;
+const TEDDY_LON = 126.35;
+
+async function loadWeather() {
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${TEDDY_LAT}&longitude=${TEDDY_LON}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m,cloud_cover&daily=weather_code,temperature_2m_max,temperature_2m_min,wind_speed_10m_max,precipitation_sum&wind_speed_unit=ms&timezone=Asia/Seoul&forecast_days=7`;
+    const res = await fetch(url);
+    const data = await res.json();
+    const c = data.current;
+    const d = data.daily;
+
+    document.getElementById('w-temp').textContent = Math.round(c.temperature_2m) + '°';
+    document.getElementById('w-condition').textContent = weatherDesc(c.weather_code);
+    document.getElementById('w-feels').textContent = '체감 ' + Math.round(c.apparent_temperature) + '°C';
+    document.getElementById('w-wind').textContent = c.wind_speed_10m.toFixed(1);
+    document.getElementById('w-humid').textContent = c.relative_humidity_2m + '%';
+    document.getElementById('w-cloud').textContent = c.cloud_cover + '%';
+
+    const score = golfScore(c.temperature_2m, c.wind_speed_10m, 0, c.weather_code);
+    document.getElementById('gs-icon').textContent = score.icon;
+    document.getElementById('gs-label').textContent = score.label;
+    document.getElementById('gs-val').textContent = score.grade;
+
+    // Forecast
+    const days = ['일','월','화','수','목','금','토'];
+    let html = '';
+    for (let i = 0; i < 7; i++) {
+      const dt = new Date(d.time[i]);
+      const dayName = i === 0 ? '오늘' : i === 1 ? '내일' : days[dt.getDay()];
+      const good = golfScore(
+        (d.temperature_2m_max[i] + d.temperature_2m_min[i]) / 2,
+        d.wind_speed_10m_max[i], d.precipitation_sum[i], d.weather_code[i]
+      );
+      const range = d.temperature_2m_max[i] - d.temperature_2m_min[i];
+      const fill = Math.round((d.temperature_2m_max[i] / 35) * 100);
+      html += `<div class="forecast-row">
+        <div class="forecast-day">${dayName}</div>
+        <div class="forecast-icon">${weatherIcon(d.weather_code[i])}</div>
+        <div class="forecast-bar-wrap">
+          <div class="forecast-bar"><div class="forecast-bar-fill" style="width:${fill}%;background:${good.color}"></div></div>
+          <div class="forecast-temps">
+            <span class="forecast-temp">${Math.round(d.temperature_2m_min[i])}°</span>
+            <span class="forecast-temp">${Math.round(d.temperature_2m_max[i])}°</span>
+          </div>
+        </div>
+        <div class="forecast-good ${good.class}">${good.icon} ${good.grade}</div>
+      </div>`;
+    }
+    document.getElementById('forecast-card').innerHTML = html;
+
+  } catch(e) {
+    document.getElementById('w-condition').textContent = '날씨 불러오기 실패';
+  }
+}
+
+function weatherDesc(code) {
+  if (code === 0) return '맑음 ☀️';
+  if (code <= 2) return '구름 조금 🌤️';
+  if (code <= 3) return '흐림 ☁️';
+  if (code <= 49) return '안개 🌫️';
+  if (code <= 67) return '비 🌧️';
+  if (code <= 77) return '눈 🌨️';
+  if (code <= 82) return '소나기 🌦️';
+  return '뇌우 ⛈️';
+}
+function weatherIcon(code) {
+  if (code === 0) return '☀️';
+  if (code <= 2) return '🌤️';
+  if (code <= 3) return '☁️';
+  if (code <= 49) return '🌫️';
+  if (code <= 67) return '🌧️';
+  if (code <= 77) return '🌨️';
+  if (code <= 82) return '🌦️';
+  return '⛈️';
+}
+function golfScore(temp, wind, precip, code) {
+  const raining = code >= 50;
+  if (raining || precip > 1) return { icon:'🔴', label:'라운드 비추천 — 강수', grade:'불량', class:'bad', color:'#dc2626' };
+  if (wind > 8) return { icon:'🟡', label:'강풍 주의 — 스코어 영향 있음', grade:'주의', class:'bad', color:'#d97706' };
+  if (temp >= 15 && temp <= 25 && wind <= 4) return { icon:'🟢', label:'최적 골프 날씨!', grade:'최적', class:'good', color:'#16a34a' };
+  if (temp >= 10 && temp <= 28 && wind <= 7) return { icon:'🟡', label:'무난한 라운드 가능', grade:'보통', class:'good', color:'#ca8a04' };
+  return { icon:'🔴', label:'라운드 컨디션 좋지 않음', grade:'불량', class:'bad', color:'#dc2626' };
+}
+
+// ══════════════════════════════════════════
+//  SUBMIT FORMS
+// ══════════════════════════════════════════
+async function submitScore() {
+  const score = {
+    date: document.getElementById('score-date').value,
+    course: document.getElementById('score-course').value,
+    total: parseInt(document.getElementById('score-total').value),
+    par: document.getElementById('score-par').value,
+    gir: parseInt(document.getElementById('score-gir').value),
+    putt: parseInt(document.getElementById('score-putt').value),
+    memo: document.getElementById('score-memo').value
+  };
+  STATE.scores.unshift(score);
+  closeModal('modal-score');
+  renderScoreList();
+  renderHomeRecent();
+  alert('✅ 스코어가 저장되었습니다!\n(Notion 연동 시 자동으로 DB에도 저장됩니다)');
+}
+async function submitLog() {
+  const log = {
+    date: document.getElementById('log-date').value,
+    type: document.getElementById('log-type').value,
+    place: document.getElementById('log-place').value,
+    content: document.getElementById('log-content').value
+  };
+  STATE.logs.unshift(log);
+  closeModal('modal-log');
+  renderLogList();
+  alert('✅ 연습 일지가 저장되었습니다!');
+}
+
+// ══════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  if (STATE.notionToken) {
+    document.getElementById('notion-banner').style.display = 'none';
+    loadAllData();
+  } else {
+    STATE.scores = getSampleScores();
+    STATE.logs = getSampleLogs();
+    STATE.clubs = getDefaultClubs();
+    renderHomeRecent();
+    renderClubs();
+    loadNextSchedule();
+  }
+
+  // 날씨는 홈 진입 시도 미리 로드
+  loadWeather();
+
+  // PWA tip — 이미 설치됐으면 숨김
+  if (window.matchMedia('(display-mode: standalone)').matches) {
+    document.getElementById('pwa-tip').style.display = 'none';
+  }
+
+  // 오늘 날짜를 헤더 sub에
+  const now = new Date();
+  document.getElementById('header-sub').textContent =
+    `${now.getFullYear()}년 ${now.getMonth()+1}월 ${now.getDate()}일 · 테디밸리`;
+});
+</script>
+</body>
+</html>
