@@ -134,7 +134,7 @@
     <div class="sub" id="header-date"></div>
   </div>
   <div id="toast">✓ 저장됨</div>
-  <button onclick="syncFromNotion()" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">🔄 동기화</button>
+  <button onclick="syncFromNotion()" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:8px;padding:6px 10px;font-size:11px;cursor:pointer">📡 동기화</button>
 </div>
 
 <div id="nav"></div>
@@ -864,53 +864,69 @@ function renderStats() {
 }
 
 // ============================================================
-// NOTION SYNC (노션 MCP 연동)
+// NOTION SEED DATA (Claude가 노션에서 직접 가져온 최신 데이터)
+// 마지막 동기화: 2026-03-23
 // ============================================================
-async function syncFromNotion() {
-  showToast("노션 동기화 중...");
-  try {
-    const res = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
-        max_tokens: 2000,
-        system: `You retrieve Notion database records and return them as clean JSON.
-Return ONLY a JSON object with keys: rounds, schedule.
-No markdown, no explanation, no code blocks.
-rounds: array of {id, name, date (YYYY-MM-DD from date:날짜:start), course (골프장), 총타수, 파, 파대비, 퍼트수, GIR, 페어웨이안착, 벌타, 날씨, 메모}
-schedule: array of {id, name (일정명), date (YYYY-MM-DD from date:날짜:start), course (골프장), partner (동반자), status (상태)}
-For dates: always use only the date part YYYY-MM-DD, never include time or timezone.
-Extract the page URL last segment as the id field.`,
-        messages: [{
-          role: "user",
-          content: `Search all pages in these two Notion data sources and return them as JSON:
-1. Rounds: collection://266b1c60-6a2b-4e82-8838-7190385e1acd (라운드 스코어)
-2. Schedule: collection://4760e1e5-8d2c-4d71-9561-a3d21847ac21 (골프 일정)
-Return ONLY the JSON object.`
-        }],
-        mcp_servers: [{ type: "url", url: "https://mcp.notion.com/mcp", name: "notion" }]
-      })
-    });
-    const data = await res.json();
-    const textBlocks = (data.content || []).filter(b => b.type === "text").map(b => b.text).join("");
-    const match = textBlocks.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error("No JSON found");
-    const parsed = JSON.parse(match[0]);
+const NOTION_SEED = {
+  rounds: [
+    {
+      id: "3263c9e62b5380dab406eec3ab630b42",
+      name: "정지호 오픈",
+      date: "2026-03-21",
+      course: "테디밸리골프앤리조트",
+      총타수: 102,
+      파: 72,
+      파대비: 30,
+      퍼트수: 0,
+      GIR: 12,
+      페어웨이안착: 9,
+      벌타: 0,
+      날씨: "맑음",
+      메모: ""
+    }
+  ],
+  schedule: [
+    {
+      id: "3263c9e62b5380f789d5d9087bc22294",
+      name: "조관희 Open",
+      date: "2026-03-21",
+      course: "테디밸리골프앤리조트",
+      partner: "조관희 김희재",
+      status: "완료"
+    }
+  ]
+};
 
-    if (parsed.rounds) {
-      State.rounds = parsed.rounds;
-      localStorage.setItem('golf_rounds', JSON.stringify(parsed.rounds));
-    }
-    if (parsed.schedule) {
-      State.schedule = parsed.schedule;
-      localStorage.setItem('golf_schedule', JSON.stringify(parsed.schedule));
-    }
-    showToast("동기화 완료!");
-    renderContent();
-  } catch(e) {
-    showToast("동기화 실패 - 로컬 데이터 사용");
-  }
+// ============================================================
+// 동기화 안내 — Claude에게 요청하는 방식으로 변경
+// (GitHub Pages에서는 Anthropic API 직접 호출 불가)
+// ============================================================
+function syncFromNotion() {
+  // 동기화 안내 모달 표시
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:999;
+    display:flex;align-items:flex-end;justify-content:center;
+  `;
+  modal.innerHTML = `
+    <div style="background:white;border-radius:20px 20px 0 0;padding:20px 20px calc(20px + env(safe-area-inset-bottom));width:100%;max-width:540px;">
+      <div style="font-size:15px;font-weight:700;margin-bottom:8px">🔄 노션 동기화 방법</div>
+      <div style="font-size:13px;color:#374151;line-height:1.7;margin-bottom:16px">
+        Claude 앱에서 아래와 같이 요청하면<br>
+        노션 데이터가 앱에 반영됩니다:<br><br>
+        <div style="background:#f0fdf4;border-left:3px solid #1a4731;padding:10px 12px;border-radius:0 8px 8px 0;font-size:12px;color:#1a4731;font-weight:600">
+          "골프 앱 노션 동기화해줘"<br>
+          "골프 매니저 최신 데이터로 업데이트해줘"
+        </div>
+      </div>
+      <div style="font-size:12px;color:#6b7280;margin-bottom:16px">
+        현재 로컬 저장 데이터: 라운드 ${(State.rounds||[]).length}개 · 일정 ${(State.schedule||[]).length}개
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="width:100%;background:#1a4731;color:white;border:none;border-radius:10px;padding:13px;font-size:15px;font-weight:700;cursor:pointer">확인</button>
+    </div>
+  `;
+  modal.addEventListener('click', e => { if(e.target === modal) modal.remove(); });
+  document.body.appendChild(modal);
 }
 
 // ============================================================
@@ -922,15 +938,37 @@ function init() {
   const d = new Date();
   $("header-date").textContent = `${d.getFullYear()}.${d.getMonth()+1}.${d.getDate()} (${days[d.getDay()]})`;
 
-  // 로컬 캐시 로드
+  // 데이터 로드: 로컬 저장 데이터 우선, 없으면 노션 시드 데이터 사용
   try {
-    const r = localStorage.getItem('golf_rounds');
-    State.rounds = r ? JSON.parse(r) : [];
-    const s = localStorage.getItem('golf_schedule');
-    State.schedule = s ? JSON.parse(s) : [];
+    const savedRounds = localStorage.getItem('golf_rounds');
+    const savedSched  = localStorage.getItem('golf_schedule');
+    const savedSeedVer = localStorage.getItem('golf_seed_ver');
+    const CURRENT_SEED_VER = "20260323";
+
+    if (!savedSeedVer || savedSeedVer !== CURRENT_SEED_VER) {
+      // 새 시드 버전 → 노션 시드로 덮어쓰기 (기존 로컬 추가분은 merge)
+      const localRounds = savedRounds ? JSON.parse(savedRounds) : [];
+      const localSched  = savedSched  ? JSON.parse(savedSched)  : [];
+
+      // 시드에 없는 로컬 전용 항목만 유지 (notion ID 없는 것들)
+      const seedRoundIds = new Set(NOTION_SEED.rounds.map(r => r.id));
+      const seedSchedIds = new Set(NOTION_SEED.schedule.map(s => s.id));
+      const localOnlyRounds = localRounds.filter(r => !seedRoundIds.has(r.id));
+      const localOnlySched  = localSched.filter(s => !seedSchedIds.has(s.id));
+
+      State.rounds   = [...NOTION_SEED.rounds, ...localOnlyRounds];
+      State.schedule = [...NOTION_SEED.schedule, ...localOnlySched];
+
+      localStorage.setItem('golf_rounds',    JSON.stringify(State.rounds));
+      localStorage.setItem('golf_schedule',  JSON.stringify(State.schedule));
+      localStorage.setItem('golf_seed_ver',  CURRENT_SEED_VER);
+    } else {
+      State.rounds   = savedRounds ? JSON.parse(savedRounds) : NOTION_SEED.rounds;
+      State.schedule = savedSched  ? JSON.parse(savedSched)  : NOTION_SEED.schedule;
+    }
   } catch {
-    State.rounds = [];
-    State.schedule = [];
+    State.rounds   = NOTION_SEED.rounds;
+    State.schedule = NOTION_SEED.schedule;
   }
 
   renderNav();
