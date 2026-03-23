@@ -1,0 +1,24 @@
+{
+  "name": "⛳ Golf Manager",
+  "short_name": "Golf",
+  "description": "나의 골프 매니저 - 노션 연동",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#1a4731",
+  "theme_color": "#1a4731",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
